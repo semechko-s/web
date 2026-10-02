@@ -1,0 +1,42 @@
+# Build output
+ValeraApi/bin/
+ValeraApi/obj/
+ValeraApi.Tests/bin/
+ValeraApi.Tests/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# OS files
+ValeraApi/.DS_Store
+ValeraApi/Thumbs.db
+
+# NuGet
+ValeraApi/*.nupkg
+ValeraApi/*.snupkg
+
+# Test results
+TestResults/
+*.trx
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# ASP.NET Core
+appsettings.Development.json

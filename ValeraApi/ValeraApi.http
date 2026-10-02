@@ -1,6 +1,17 @@
 @ValeraApi_HostAddress = http://localhost:5055
 
-GET {{ValeraApi_HostAddress}}/weatherforecast/
+GET {{ValeraApi_HostAddress}}/api/valera
 Accept: application/json
 
 ###
+
+POST {{ValeraApi_HostAddress}}/api/valera
+Content-Type: application/json
+
+{
+  "health": 100,
+  "alcohol": 0,
+  "cheerfulness": 0,
+  "fatigue": 0,
+  "money": 500
+}

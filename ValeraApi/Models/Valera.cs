@@ -2,11 +2,15 @@ namespace ValeraApi.Models;
 
 public class Valera
 {
+    public int Id { get; set; }
+
     public int Health { get; private set; }
     public int Alcohol { get; private set; }
     public int Cheerfulness { get; private set; }
     public int Fatigue { get; private set; }
     public decimal Money { get; private set; }
+
+    private Valera() { }
 
     public Valera(
         int health = 100,
@@ -20,6 +24,16 @@ public class Valera
         Cheerfulness = Math.Clamp(cheerfulness, -10, 10);
         Fatigue = Math.Clamp(fatigue, 0, 100);
         Money = Math.Max(0, money);
+    }
+
+    internal void SetState(int health, int alcohol, int cheerfulness, int fatigue, decimal money)
+    {
+        Health = health;
+        Alcohol = alcohol;
+        Cheerfulness = cheerfulness;
+        Fatigue = fatigue;
+        Money = money;
+        Normalize();
     }
 
     //пойти на работу
