@@ -57,3 +57,13 @@ dotnet ef database update
 ```
 
 После этого `EnsureCreated()` убрать.
+
+## React frontend
+
+В каталоге `frontend` находится React-интерфейс (Vite) для управления Валерами.
+
+1. Запустите API: `cd ValeraApi && dotnet run --launch-profile http` — API и Swagger доступны на `http://localhost:5055`.
+2. В другом терминале запустите интерфейс: `cd frontend && npm install && npm run dev`.
+3. Откройте `http://localhost:5173`.
+
+Подробности и настройка адреса API — в `frontend/README.md`.

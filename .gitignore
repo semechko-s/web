@@ -40,3 +40,7 @@ TestResults/
 
 # ASP.NET Core
 appsettings.Development.json
+# React frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
