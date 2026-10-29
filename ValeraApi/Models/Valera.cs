@@ -4,6 +4,7 @@ public class Valera
 {
     public int Id { get; set; }
 
+    public string Name { get; set; }
     public int Health { get; private set; }
     public int Alcohol { get; private set; }
     public int Cheerfulness { get; private set; }
@@ -13,12 +14,14 @@ public class Valera
     private Valera() { }
 
     public Valera(
+        string name = "Valera",
         int health = 100,
         int alcohol = 0,
         int cheerfulness = 0,
         int fatigue = 0,
         decimal money = 0)
     {
+        Name = name;
         Health = Math.Clamp(health, 0, 100);
         Alcohol = Math.Clamp(alcohol, 0, 100);
         Cheerfulness = Math.Clamp(cheerfulness, -10, 10);
