@@ -16,6 +16,11 @@ public class ValeraService : IValeraService
     public Task<List<Valera>> GetAllAsync() =>
         _db.Valeras.AsNoTracking().ToListAsync();
 
+    public Task<List<Valera>> GetByUserIdAsync(int userId) =>
+        _db.Valeras.AsNoTracking()
+            .Where(v => v.UserId == userId)
+            .ToListAsync();
+
     public Task<Valera?> GetByIdAsync(int id) =>
         _db.Valeras.AsNoTracking().FirstOrDefaultAsync(v => v.Id == id);
 

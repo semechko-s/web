@@ -1,69 +1,100 @@
-# ValeraApi — EF Core + Service + Controller + Swagger
+# Valera — ASP.NET Core + EF Core + SQLite + React
 
-## Запуск
+## Состав
 
-```bash
+- `ValeraApi/` — ASP.NET Core Web API, JWT-аутентификация, роли User/Admin, EF Core и SQLite.
+- `frontend/` — React + Vite.
+- `ValeraApi.Tests/` — unit-тесты доменной модели.
+
+## Требования
+
+- .NET SDK 10
+- Node.js 20+ и npm
+
+## Запуск backend (Windows PowerShell)
+
+```powershell
 cd ValeraApi
 dotnet restore
-dotnet run
+dotnet run --launch-profile http
 ```
 
-Приложение использует SQLite. При первом запуске файл `valera.db` создаётся автоматически.
+API: `http://localhost:5055`  
+Swagger: `http://localhost:5055/swagger`
 
-Swagger UI: `https://localhost:xxxx/swagger` (точный порт выводится в консоли).
+При старте backend автоматически применяет EF Core migrations. Файл SQLite `valera.db` расположен в каталоге `ValeraApi`.
 
-## API
+## Запуск frontend (второй терминал)
 
-- `GET /api/valera` — получить всех Valera
-- `GET /api/valera/{id}` — получить Valera по id
-- `POST /api/valera` — создать Valera
-- `PUT /api/valera/{id}` — изменить Valera
-- `DELETE /api/valera/{id}` — удалить Valera
-- `POST /api/valera/{id}/work` — пойти на работу
-- `POST /api/valera/{id}/nature` — созерцать природу
-- `POST /api/valera/{id}/drink-series` — пить и смотреть сериал
-- `POST /api/valera/{id}/bar` — сходить в бар
-- `POST /api/valera/{id}/drink-marginal` — выпить
-- `POST /api/valera/{id}/metro` — петь в метро
-- `POST /api/valera/{id}/sleep` — спать
-
-## Пример POST
-
-```json
-{
-  "health": 100,
-  "alcohol": 0,
-  "cheerfulness": 0,
-  "fatigue": 0,
-  "money": 500
-}
+```powershell
+cd frontend
+Copy-Item .env.example .env
+npm install
+npm run dev
 ```
 
-## Что реализовано
+Frontend: `http://localhost:5173`
 
-1. `Microsoft.EntityFrameworkCore.Sqlite` подключает EF Core и SQLite.
-2. `AppDbContext` содержит `DbSet<Valera>`.
-3. `ValeraService` выполняет CRUD.
-4. `ValeraController` предоставляет REST API.
-5. `Swashbuckle.AspNetCore` подключает Swagger/OpenAPI и Swagger UI.
-6. `EnsureCreated()` автоматически создаёт БД при первом запуске.
+`frontend/.env.example` уже содержит адрес API:
+`VITE_API_URL=http://localhost:5055/api/valera`
 
-EF Core migrations, после установки `dotnet-ef`:
+## Регистрация и вход
 
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate
-dotnet ef database update
+1. Откройте `http://localhost:5173/register`.
+2. Зарегистрируйте пользователя.
+3. Войдите через `/login`.
+4. Создавайте Валер — они автоматически закрепляются за текущим пользователем.
+
+Публичная регистрация всегда создаёт роль `User`. Клиент не может назначить себе `Admin`.
+
+## Назначение администратора
+
+После регистрации пользователя измените его роль в SQLite:
+
+```sql
+UPDATE Users
+SET Role = 'Admin'
+WHERE Email = 'admin@example.com';
 ```
 
-После этого `EnsureCreated()` убрать.
+Затем выйдите из приложения и войдите снова: роль записывается в JWT при входе.
 
-## React frontend
+Для открытия SQLite можно использовать DB Browser for SQLite. Путь к БД: `ValeraApi/valera.db`.
 
-В каталоге `frontend` находится React-интерфейс (Vite) для управления Валерами.
+## Авторизация и права
 
-1. Запустите API: `cd ValeraApi && dotnet run --launch-profile http` — API и Swagger доступны на `http://localhost:5055`.
-2. В другом терминале запустите интерфейс: `cd frontend && npm install && npm run dev`.
-3. Откройте `http://localhost:5173`.
+- Все маршруты `/api/valera` требуют JWT.
+- `GET /api/valera` — только Admin.
+- `GET /api/valera/my` — Валеры текущего пользователя.
+- Чтение одной записи, изменение, удаление и игровые действия разрешены владельцу или Admin.
+- `UserId` при создании берётся из JWT, а не из тела запроса.
+- Для изменения владелец из исходной записи сохраняется сервером.
 
-Подробности и настройка адреса API — в `frontend/README.md`.
+## Проверка
+
+```powershell
+cd ValeraApi
+dotnet build
+dotnet test
+```
+
+В другом терминале:
+
+```powershell
+cd frontend
+npm run build
+```
+
+## JWT secret
+
+В `appsettings.json` задан ключ только для локальной разработки. Для собственного окружения задайте переменную `Jwt__Key` (не менее 32 байт), например:
+
+```powershell
+$env:Jwt__Key = "replace-this-with-a-long-random-secret-value"
+```
+
+Не используйте ключ из репозитория в production.
+
+## Существующая база данных
+
+В архив включена база `ValeraApi/valera.db` из переданного проекта, чтобы сохранить находившиеся в ней записи и пользователей. Перед экспериментами сделайте копию файла. Для чистой установки удалите `valera.db`: при следующем запуске миграции создадут новую базу.

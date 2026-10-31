@@ -5,6 +5,7 @@ namespace ValeraApi.Services;
 public interface IValeraService
 {
     Task<List<Valera>> GetAllAsync();
+    Task<List<Valera>> GetByUserIdAsync(int userId);
     Task<Valera?> GetByIdAsync(int id);
     Task<Valera> CreateAsync(Valera valera);
     Task<bool> UpdateAsync(int id, Valera valera);

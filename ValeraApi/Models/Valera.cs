@@ -4,7 +4,9 @@ public class Valera
 {
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public int UserId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
     public int Health { get; private set; }
     public int Alcohol { get; private set; }
     public int Cheerfulness { get; private set; }
