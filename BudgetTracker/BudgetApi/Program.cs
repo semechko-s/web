@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using BudgetApi.Data;
 using BudgetApi.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args is ["--promote-admin", _] ? [] : args);
 
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
@@ -65,11 +65,45 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Назначение роли выполняется владельцем локального экземпляра через командную строку.
+if (args is ["--promote-admin", var email])
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var normalizedEmail = email.Trim().ToLowerInvariant();
+    var user = await db.Users.SingleOrDefaultAsync(user => user.Email == normalizedEmail);
+    if (user is null)
+    {
+        Console.Error.WriteLine("Пользователь с таким адресом не найден.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    user.Role = "Admin";
+    await db.SaveChangesAsync();
+    Console.WriteLine("Роль администратора назначена.");
+    return;
+}
+
 // Создаём схему SQLite при первом запуске.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    if (app.Environment.IsDevelopment() &&
+        !await db.Users.AnyAsync(user => user.Email == "admin"))
+    {
+        var admin = new BudgetApi.Models.AppUser
+        {
+            Email = "admin",
+            Username = "admin",
+            Role = "Admin"
+        };
+        var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<BudgetApi.Models.AppUser>();
+        admin.PasswordHash = hasher.HashPassword(admin, "password");
+        db.Users.Add(admin);
+        await db.SaveChangesAsync();
+    }
 }
 
 app.UseCors("ReactFrontend");

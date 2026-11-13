@@ -62,7 +62,9 @@ function Auth({ onLogin, expired }) {
     {expired && <p role="status">Сеанс завершился. Войдите снова.</p>}
     <form onSubmit={submit}>
       {register && <label>Имя<input name="username" required minLength="2" maxLength="80" autoComplete="name" /></label>}
-      <label>Электронная почта<input name="email" type="email" required maxLength="254" autoComplete="email" /></label>
+      <label>{register ? 'Электронная почта' : 'Логин или электронная почта'}
+        <input name="email" type={register ? 'email' : 'text'} required maxLength="254"
+          autoComplete={register ? 'email' : 'username'} /></label>
       <label>Пароль<input name="password" type="password" required minLength={register ? 8 : undefined}
         maxLength="128" autoComplete={register ? 'new-password' : 'current-password'} /></label>
       {error && <p className="error" role="alert">{error}</p>}
@@ -116,6 +118,46 @@ function OperationForm({ item, month, onSave, onClose, busy }) {
   </form>
 }
 
+function AdminPanel({ session, onLogout }) {
+  const [open, setOpen] = useState(false)
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    const controller = new AbortController()
+    setData(null)
+    setError('')
+    request('/admin/overview', { token: session.token, signal: controller.signal })
+      .then(result => {
+        if (!controller.signal.aborted) setData(result)
+      })
+      .catch(err => {
+        if (controller.signal.aborted) return
+        if (err.status === 401) onLogout(true)
+        else setError(err.message)
+      })
+    return () => controller.abort()
+  }, [open, session.token, onLogout])
+
+  return <section className="panel">
+    <div className="heading"><h2>Администрирование</h2>
+      <button className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? 'Свернуть' : 'Показать пользователей'}
+      </button>
+    </div>
+    {open && error && <p className="error" role="alert">{error}</p>}
+    {open && !error && !data && <p role="status">Загрузка…</p>}
+    {open && data && <>
+      <p>Аккаунтов: {data.users.length}. Операций в приложении: {data.transactionCount}.</p>
+      <ul className="transactions">{data.users.map(user => <li key={user.id}>
+        <div><b>{user.username}</b><small>{user.email}</small></div>
+        <span>{user.role === 'Admin' ? 'Администратор' : 'Пользователь'}</span>
+      </li>)}</ul>
+    </>}
+  </section>
+}
+
 function Dashboard({ session, onLogout }) {
   const [month, setMonth] = useState(today().slice(0, 7))
   const [items, setItems] = useState([])
@@ -143,6 +185,15 @@ function Dashboard({ session, onLogout }) {
       })
     return () => controller.abort()
   }, [month, revision, session.token, onLogout])
+
+  function changeMonth(value) {
+    if (value === month) return
+    setMonth(value)
+    setLoadedMonth(null)
+    setLoadError('')
+    setEditor(null)
+    setError('')
+  }
 
   async function mutate(path, method, body) {
     setBusy(true)
@@ -184,15 +235,22 @@ function Dashboard({ session, onLogout }) {
         setError('')
         setEditor({})
       }} disabled={busy}>+ Добавить операцию</button></div>
-      <label className="month">Отчётный месяц<input type="month" value={month}
-        min="1900-01" max="2100-12" disabled={busy} onChange={event => {
-          const value = event.target.value
-          if (!/^(19[0-9]{2}|20[0-9]{2}|2100)-(0[1-9]|1[0-2])$/.test(value)) return
-          setMonth(value)
-          setLoadedMonth(null)
-          setEditor(null)
-          setError('')
-        }} /></label>
+      <div className="actions">
+        <label>Месяц<select value={month.slice(5)} disabled={busy}
+          onChange={event => changeMonth(month.slice(0, 4) + '-' + event.target.value)}>
+          {Array.from({ length: 12 }, (_, index) => {
+            const value = String(index + 1).padStart(2, '0')
+            const label = new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(2026, index, 1))
+            return <option key={value} value={value}>{label}</option>
+          })}
+        </select></label>
+        <label>Год<select value={month.slice(0, 4)} disabled={busy}
+          onChange={event => changeMonth(event.target.value + month.slice(4))}>
+          {Array.from({ length: 201 }, (_, index) => 2100 - index)
+            .map(year => <option key={year}>{year}</option>)}
+        </select></label>
+      </div>
+      {session.user.role === 'Admin' && <AdminPanel session={session} onLogout={onLogout} />}
       <div className="summary">
         <div className="panel balance"><span>Итог за месяц</span><strong>{ready ? formatMoney(income - expenses) : '—'}</strong></div>
         <div className="panel"><span>Доходы</span><strong className="income">{ready ? formatMoney(income) : '—'}</strong></div>
